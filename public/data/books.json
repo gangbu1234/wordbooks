@@ -1,0 +1,12 @@
+[
+    {
+        "id": "basic_words",
+        "name": "Basic Fruits",
+        "file": "/data/basic_words.csv"
+    },
+    {
+        "id": "it_terms",
+        "name": "IT Terminology",
+        "file": "/data/it_terms.csv"
+    }
+]
