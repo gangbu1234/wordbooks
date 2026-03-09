@@ -72,13 +72,14 @@ export default function Home() {
             row.some(cell => /語彙|語釈|単語|意味|word|meaning/i.test(cell))
           );
           const dataRows = rows.slice(headerIndex === -1 ? 0 : headerIndex + 1);
-
           const finalData = dataRows.map(row => {
-            // find all cells that are not just numbers and not empty
+            // Keep the original row for filtering logic later
+            const rawRow = row.map(c => c.trim());
+
+            // find all cells that are not just numbers and not empty for word/meaning
             const textCells = row.map((cell, idx) => ({ cell: cell.trim(), idx }))
               .filter(obj => obj.cell.length > 0 && isNaN(Number(obj.cell.replace(/[,.-]/g, ''))));
 
-            // If we didn't find clear text cells, just take the first two non-empty ones
             let word = '';
             let meaning = '';
 
@@ -91,7 +92,7 @@ export default function Home() {
               meaning = nonEmpties[1] || '';
             }
 
-            return { word, meaning };
+            return { word, meaning, rawRow };
           }).filter(item => item.word.length > 0);
 
           if (finalData.length === 0) {
