@@ -39,37 +39,76 @@ export default function Home() {
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const content = event.target?.result;
-      if (typeof content !== 'string') return;
+      const result = event.target?.result;
+      if (!result) return;
 
-      Papa.parse(content, {
-        header: true,
+      // Simple encoding detection/fix for Japanese characters (Shift-JIS vs UTF-8)
+      // If the file is from Excel (Japanese environment), it's likely Shift-JIS.
+      let csvText = '';
+      const decoder = new TextDecoder('utf-8');
+      const dataView = new Uint8Array(result as ArrayBuffer);
+
+      try {
+        // Try UTF-8 first
+        csvText = decoder.decode(dataView);
+        if (csvText.includes('')) { // Replacement character found, probably not UTF-8
+          throw new Error('Not UTF-8');
+        }
+      } catch (e) {
+        // Fallback to Shift-JIS (CP932)
+        const sjisDecoder = new TextDecoder('shift-jis');
+        csvText = sjisDecoder.decode(dataView);
+      }
+
+      Papa.parse(csvText, {
+        header: false, // Parse as arrays first to find the header row
         skipEmptyLines: 'greedy',
         complete: (results) => {
-          // Normalize keys (handle different column names like '単語','意味' etc.)
-          const rawData = results.data as any[];
-          const normalizedData = rawData.map(row => {
-            const keys = Object.keys(row);
-            // Find word-like key
-            const wordKey = keys.find(k => k.toLowerCase().includes('word') || k.includes('単語') || k.includes('語彙')) || keys[0];
-            // Find meaning-like key
-            const meaningKey = keys.find(k => k.toLowerCase().includes('meaning') || k.includes('意味') || k.includes('訳') || k.includes('釈')) || keys[1];
+          const rows = results.data as string[][];
+          if (rows.length === 0) return;
 
-            return {
-              word: row[wordKey]?.toString() || '',
-              meaning: row[meaningKey]?.toString() || ''
-            };
-          }).filter(item => item.word.trim() !== '');
+          // Find the header row (the one containing '語彙', '語釈', 'word', 'meaning' etc.)
+          let headerIndex = -1;
+          for (let i = 0; i < Math.min(rows.length, 5); i++) {
+            const rowStr = rows[i].join(',');
+            if (rowStr.includes('語彙') || rowStr.includes('語釈') || rowStr.includes('単語') || rowStr.includes('意味') || rowStr.includes('word') || rowStr.includes('meaning')) {
+              headerIndex = i;
+              break;
+            }
+          }
 
-          if (normalizedData.length === 0) {
-            alert('有効なデータが見つかりませんでした。CSVの形式を確認してください。');
+          let finalData: any[] = [];
+          if (headerIndex !== -1) {
+            // Use identified header row
+            const headers = rows[headerIndex];
+            const wordIdx = headers.findIndex(h => h.includes('語彙') || h.includes('単語') || h.includes('word')) !== -1
+              ? headers.findIndex(h => h.includes('語彙') || h.includes('単語') || h.includes('word'))
+              : (headers.length > 1 ? 1 : 0);
+            const meaningIdx = headers.findIndex(h => h.includes('語釈') || h.includes('意味') || h.includes('meaning') || h.includes('訳')) !== -1
+              ? headers.findIndex(h => h.includes('語釈') || h.includes('意味') || h.includes('meaning') || h.includes('訳'))
+              : (headers.length > 2 ? 2 : 1);
+
+            finalData = rows.slice(headerIndex + 1).map(row => ({
+              word: row[wordIdx]?.trim() || '',
+              meaning: row[meaningIdx]?.trim() || ''
+            })).filter(item => item.word !== '');
+          } else {
+            // Fallback: No header found, assume col 0 is word, col 1 is meaning
+            finalData = rows.map(row => ({
+              word: row[0]?.trim() || '',
+              meaning: row[1]?.trim() || ''
+            })).filter(item => item.word !== '');
+          }
+
+          if (finalData.length === 0) {
+            alert('有効なデータが見つかりませんでした。CSVの内容を確認してください。');
             return;
           }
 
           const newBook: BookItem = {
             id: `custom-${Date.now()}`,
             name: file.name.replace('.csv', ''),
-            data: normalizedData,
+            data: finalData,
             isCustom: true
           };
           const updatedCustom = [newBook, ...customBooks];
@@ -78,8 +117,8 @@ export default function Home() {
         }
       });
     };
-    // Use readAsText. If Japanese characters are garbled, notify user or try different encoding.
-    reader.readAsText(file);
+    // Read as ArrayBuffer to handle encoding detection
+    reader.readAsArrayBuffer(file);
   };
 
   const deleteCustomBook = (id: string, e: React.MouseEvent) => {
