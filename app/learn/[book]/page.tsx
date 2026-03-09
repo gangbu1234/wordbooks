@@ -10,6 +10,7 @@ import styles from './Learn.module.css';
 interface CardData {
     word: string;
     meaning: string;
+    checks: boolean[];
     rawRow?: string[];
 }
 
@@ -25,7 +26,7 @@ const LearnPage = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [activeFilter, setActiveFilter] = useState<number>(0); // 0=ALL, 1-6=Filters
+    const [activeFilter, setActiveFilter] = useState<number>(0);
 
     useEffect(() => {
         const fetchCSV = async () => {
@@ -35,7 +36,15 @@ const LearnPage = () => {
                     const customBooks = JSON.parse(saved);
                     const currentBook = customBooks.find((b: any) => b.id === bookId);
                     if (currentBook && currentBook.data) {
-                        setData(currentBook.data);
+                        // Initialize checks from existing data if found, otherwise map from rawRow
+                        const initialized = currentBook.data.map((item: any) => ({
+                            ...item,
+                            checks: item.checks || (item.rawRow ? [2, 3, 4, 5, 6, 7].map(idx => {
+                                const v = String(item.rawRow[idx] || '').toLowerCase().trim();
+                                return v === '1' || v === 'o' || v === 'v' || v === 'checked';
+                            }) : [false, false, false, false, false, false])
+                        }));
+                        setData(initialized);
                         setLoading(false);
                         return;
                     }
@@ -55,12 +64,18 @@ const LearnPage = () => {
                     skipEmptyLines: 'greedy',
                     complete: (results) => {
                         const rows = results.data as string[][];
-                        // Basic word/meaning mapping for default files
-                        const parsed = rows.map(row => ({
-                            word: row[0] || '',
-                            meaning: row[1] || '',
-                            rawRow: row
-                        })).filter(item => item.word !== '');
+                        const parsed = rows.map(row => {
+                            const checks = [2, 3, 4, 5, 6, 7].map(idx => {
+                                const v = String(row[idx] || '').toLowerCase().trim();
+                                return v === '1' || v === 'o' || v === 'v' || v === 'checked';
+                            });
+                            return {
+                                word: row[0] || '',
+                                meaning: row[1] || '',
+                                checks,
+                                rawRow: row
+                            };
+                        }).filter(item => item.word !== '');
 
                         setData(parsed);
                         setLoading(false);
@@ -75,7 +90,7 @@ const LearnPage = () => {
         fetchCSV();
     }, [bookId, isCustom]);
 
-    // Filtering Logic based on User Request
+    // Filtering Logic: Uses 'checks' array for real-time reactivity
     useEffect(() => {
         if (!data || data.length === 0) {
             setFilteredData([]);
@@ -83,29 +98,23 @@ const LearnPage = () => {
         }
 
         let result = [...data];
-        const isSet = (row: string[] | undefined, idx: number) => {
-            if (!row || !row[idx]) return false;
-            const v = row[idx].toLowerCase().trim();
-            return v === '1' || v === 'o' || v === 'checked' || v === 'v';
-        };
-
         switch (activeFilter) {
-            case 1: // 1個目: チェックがある語のみ
-                result = data.filter(item => isSet(item.rawRow, 2));
+            case 1:
+                result = data.filter(item => item.checks[0]);
                 break;
-            case 2: // 2個目: 1回目 ∩ 2回目
-                result = data.filter(item => isSet(item.rawRow, 2) && isSet(item.rawRow, 3));
+            case 2:
+                result = data.filter(item => item.checks[0] && item.checks[1]);
                 break;
-            case 3: // 3個目: すべて出力
+            case 3:
                 result = [...data];
                 break;
-            case 4: // 4個目: 4個目にチェックがある語
-                result = data.filter(item => isSet(item.rawRow, 5));
+            case 4:
+                result = data.filter(item => item.checks[3]);
                 break;
-            case 5: // 5個目: 4回目 ∩ 5回目
-                result = data.filter(item => isSet(item.rawRow, 5) && isSet(item.rawRow, 6));
+            case 5:
+                result = data.filter(item => item.checks[3] && item.checks[4]);
                 break;
-            case 6: // 6個目: すべて出力
+            case 6:
                 result = [...data];
                 break;
             default:
@@ -115,6 +124,35 @@ const LearnPage = () => {
         setFilteredData(result);
         setCurrentIndex(0);
     }, [data, activeFilter]);
+
+    const handleCheckToggle = (filteredIdx: number, checkIdx: number) => {
+        // We need to find the original index in the main 'data' array
+        const targetWord = filteredData[filteredIdx];
+        if (!targetWord) return;
+
+        const newData = data.map(item => {
+            if (item.word === targetWord.word && item.meaning === targetWord.meaning) {
+                const newChecks = [...item.checks];
+                newChecks[checkIdx] = !newChecks[checkIdx];
+                return { ...item, checks: newChecks };
+            }
+            return item;
+        });
+
+        setData(newData);
+
+        // Persist if custom
+        if (isCustom) {
+            const saved = localStorage.getItem('custom_wordbooks');
+            if (saved) {
+                const customBooks = JSON.parse(saved);
+                const updatedBooks = customBooks.map((b: any) =>
+                    b.id === bookId ? { ...b, data: newData } : b
+                );
+                localStorage.setItem('custom_wordbooks', JSON.stringify(updatedBooks));
+            }
+        }
+    };
 
     const handleNext = () => {
         if (filteredData.length === 0) return;
@@ -172,13 +210,13 @@ const LearnPage = () => {
                     ))}
                 </div>
                 <div className={styles.filterInfo}>
-                    {activeFilter === 0 && "全600語を表示中"}
-                    {activeFilter === 1 && "1回目チェック分のみ抽出"}
-                    {activeFilter === 2 && "1回目と2回目の重複分を抽出"}
-                    {activeFilter === 3 && "全表示モード"}
-                    {activeFilter === 4 && "4回目チェック分のみ抽出"}
-                    {activeFilter === 5 && "4回目と5回目の重複分を抽出"}
-                    {activeFilter === 6 && "全表示モード"}
+                    {activeFilter === 0 && "全表示中"}
+                    {activeFilter === 1 && "1個目のチェック済みのみ抽出"}
+                    {activeFilter === 2 && "1個目と2回目の両方にチェックがある語を抽出"}
+                    {activeFilter === 3 && "全表示（リセット）"}
+                    {activeFilter === 4 && "4個目のチェック済みのみ抽出"}
+                    {activeFilter === 5 && "4回目と5回目の両方にチェックがある語を抽出"}
+                    {activeFilter === 6 && "全表示（リセット）"}
                 </div>
             </div>
 
@@ -189,6 +227,7 @@ const LearnPage = () => {
                         currentIndex={currentIndex}
                         onNext={handleNext}
                         onPrev={handlePrev}
+                        onCheckToggle={handleCheckToggle}
                     />
                 ) : (
                     <div className={styles.center}>

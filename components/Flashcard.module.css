@@ -95,6 +95,41 @@
     letter-spacing: 0.1em;
 }
 
+.checkRow {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    z-index: 20;
+}
+
+.checkButton {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid #e2e8f0;
+    background: white;
+    color: #a0aec0;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.checkButton:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: scale(1.1);
+}
+
+.checked {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
 .swipeInstruction {
     position: fixed;
     top: 50%;

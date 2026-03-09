@@ -8,6 +8,7 @@ import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 interface CardData {
     word: string;
     meaning: string;
+    checks: boolean[];
 }
 
 interface FlashcardProps {
@@ -15,12 +16,12 @@ interface FlashcardProps {
     currentIndex: number;
     onNext: () => void;
     onPrev: () => void;
+    onCheckToggle: (wordIndex: number, checkIndex: number) => void;
 }
 
-const Flashcard: React.FC<FlashcardProps> = ({ data, currentIndex, onNext, onPrev }) => {
+const Flashcard: React.FC<FlashcardProps> = ({ data, currentIndex, onNext, onPrev, onCheckToggle }) => {
     const [isFlipped, setIsFlipped] = useState(false);
-    const controls = useAnimation();
-    const currentWord = data[currentIndex] || { word: '', meaning: '' };
+    const currentWord = data[currentIndex] || { word: '', meaning: '', checks: [false, false, false, false, false, false] };
 
     // Reset flip when word changes
     useEffect(() => {
@@ -29,7 +30,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ data, currentIndex, onNext, onPre
 
     const handleDragEnd = (_: any, info: PanInfo) => {
         const threshold = 50;
-        const { offset, velocity } = info;
+        const { offset } = info;
 
         // Detect horizontal swipe (Left/Right)
         if (Math.abs(offset.x) > threshold && Math.abs(offset.x) > Math.abs(offset.y)) {
@@ -38,14 +39,14 @@ const Flashcard: React.FC<FlashcardProps> = ({ data, currentIndex, onNext, onPre
         // Detect vertical swipe (Up/Down)
         else if (Math.abs(offset.y) > threshold && Math.abs(offset.y) > Math.abs(offset.x)) {
             if (offset.y < 0) {
-                // Swipe Up -> Next
                 onNext();
             } else {
-                // Swipe Down -> Prev
                 onPrev();
             }
         }
     };
+
+    const currentChecks = currentWord.checks || [false, false, false, false, false, false];
 
     return (
         <div className={styles.container}>
@@ -72,21 +73,33 @@ const Flashcard: React.FC<FlashcardProps> = ({ data, currentIndex, onNext, onPre
                 whileTap={{ scale: 0.98 }}
             >
                 <div className={styles.cardInner}>
-                    {!isFlipped ? (
-                        /* Front: Word */
-                        <div className={`${styles.cardFace} ${styles.cardFront}`}>
-                            <span className={styles.hintTop}>Word</span>
-                            <div className={styles.word}>{currentWord.word}</div>
-                            <span className={styles.hintBottom}>Swipe L/R to Flip</span>
+                    <div className={styles.cardFace}>
+                        <span className={styles.hintTop}>{isFlipped ? 'MEANING' : 'WORD'}</span>
+
+                        <div className={isFlipped ? styles.meaning : styles.word}>
+                            {isFlipped ? currentWord.meaning : currentWord.word}
                         </div>
-                    ) : (
-                        /* Back: Meaning */
-                        <div className={`${styles.cardFace} ${styles.cardBack}`}>
-                            <span className={styles.hintTop}>Meaning</span>
-                            <div className={styles.meaning}>{currentWord.meaning}</div>
-                            <span className={styles.hintBottom}>Swipe Up/Down for Next/Prev</span>
+
+                        <div className={styles.checkRow}>
+                            {currentChecks.map((isChecked, i) => (
+                                <button
+                                    key={i}
+                                    className={`${styles.checkButton} ${isChecked ? styles.checked : ''}`}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        onCheckToggle(currentIndex, i);
+                                    }}
+                                >
+                                    {i + 1}
+                                </button>
+                            ))}
                         </div>
-                    )}
+
+                        <span className={styles.hintBottom}>
+                            Swipe L/R to Flip • Up/Down for next
+                        </span>
+                    </div>
                 </div>
             </motion.div>
         </div>

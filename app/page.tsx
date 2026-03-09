@@ -92,7 +92,12 @@ export default function Home() {
               meaning = nonEmpties[1] || '';
             }
 
-            return { word, meaning, rawRow };
+            const checks = [2, 3, 4, 5, 6, 7].map(idx => {
+              const v = String(row[idx] || '').toLowerCase().trim();
+              return v === '1' || v === 'o' || v === 'v' || v === 'checked';
+            });
+
+            return { word, meaning, checks, rawRow };
           }).filter(item => item.word.length > 0);
 
           if (finalData.length === 0) {
@@ -223,7 +228,7 @@ export default function Home() {
 
       <footer className={styles.footer}>
         <p>&copy; 2024 Wordbooks For Students</p>
-        <p style={{ fontSize: '0.7rem', opacity: 0.5, marginTop: '4px' }}>Build: 2024.03.10.05 (Excel Detection & Scroll Fix)</p>
+        <p style={{ fontSize: '0.7rem', opacity: 0.5, marginTop: '4px' }}>Build: 2024.03.10.06 (Interactive Checkboxes)</p>
       </footer>
     </main>
   );
