@@ -39,15 +39,37 @@ export default function Home() {
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const csvText = event.target?.result as string;
-      Papa.parse(csvText, {
+      const content = event.target?.result;
+      if (typeof content !== 'string') return;
+
+      Papa.parse(content, {
         header: true,
-        skipEmptyLines: true,
+        skipEmptyLines: 'greedy',
         complete: (results) => {
+          // Normalize keys (handle different column names like '単語','意味' etc.)
+          const rawData = results.data as any[];
+          const normalizedData = rawData.map(row => {
+            const keys = Object.keys(row);
+            // Find word-like key
+            const wordKey = keys.find(k => k.toLowerCase().includes('word') || k.includes('単語') || k.includes('語彙')) || keys[0];
+            // Find meaning-like key
+            const meaningKey = keys.find(k => k.toLowerCase().includes('meaning') || k.includes('意味') || k.includes('訳') || k.includes('釈')) || keys[1];
+
+            return {
+              word: row[wordKey]?.toString() || '',
+              meaning: row[meaningKey]?.toString() || ''
+            };
+          }).filter(item => item.word.trim() !== '');
+
+          if (normalizedData.length === 0) {
+            alert('有効なデータが見つかりませんでした。CSVの形式を確認してください。');
+            return;
+          }
+
           const newBook: BookItem = {
             id: `custom-${Date.now()}`,
             name: file.name.replace('.csv', ''),
-            data: results.data,
+            data: normalizedData,
             isCustom: true
           };
           const updatedCustom = [newBook, ...customBooks];
@@ -56,6 +78,7 @@ export default function Home() {
         }
       });
     };
+    // Use readAsText. If Japanese characters are garbled, notify user or try different encoding.
     reader.readAsText(file);
   };
 
