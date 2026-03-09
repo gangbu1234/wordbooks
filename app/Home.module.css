@@ -52,6 +52,70 @@
     gap: 16px;
 }
 
+.importSection {
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: center;
+}
+
+.importButton {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--primary);
+    color: white;
+    padding: 16px 24px;
+    border-radius: 16px;
+    font-family: var(--font-inter), sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+}
+
+.importButton:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(74, 144, 226, 0.4);
+}
+
+.bookCardWrapper {
+    position: relative;
+    width: 100%;
+}
+
+.customCard {
+    border-left: 4px solid var(--primary);
+}
+
+.customIcon {
+    background: var(--foreground) !important;
+}
+
+.cardActions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.deleteButton {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.deleteButton:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
 .bookCard {
     background: var(--card-bg);
     backdrop-filter: blur(16px);

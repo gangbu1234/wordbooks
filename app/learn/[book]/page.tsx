@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Papa from 'papaparse';
 import Flashcard from '@/components/Flashcard';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,7 +16,9 @@ interface WordData {
 export default function LearnPage() {
     const params = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const bookId = params.book as string;
+    const isCustom = searchParams.get('custom') === 'true';
 
     const [words, setWords] = useState<WordData[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -25,6 +27,23 @@ export default function LearnPage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        if (isCustom) {
+            // Load from localStorage
+            const saved = localStorage.getItem('custom_wordbooks');
+            if (saved) {
+                const customBooks = JSON.parse(saved);
+                const currentBook = customBooks.find((b: any) => b.id === bookId);
+                if (currentBook && currentBook.data) {
+                    setWords(currentBook.data);
+                    setLoading(false);
+                } else {
+                    setError('カスタム単語帳が見つかりませんでした');
+                    setLoading(false);
+                }
+            }
+            return;
+        }
+
         const fetchCSV = async () => {
             try {
                 const response = await fetch(`/data/${bookId}.csv`);
