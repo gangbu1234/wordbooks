@@ -70,8 +70,8 @@ export default function Home() {
           // Find the header row (the one containing '語彙', '語釈', 'word', 'meaning' etc.)
           let headerIndex = -1;
           for (let i = 0; i < Math.min(rows.length, 5); i++) {
-            const rowStr = rows[i].join(',');
-            if (rowStr.includes('語彙') || rowStr.includes('語釈') || rowStr.includes('単語') || rowStr.includes('意味') || rowStr.includes('word') || rowStr.includes('meaning')) {
+            const rowStr = rows[i].join(',').replace(/[\uFEFF\u200B-\u200D\uFEFF]/g, ""); // Remove zero-width spaces
+            if (rowStr.match(/語彙|語釈|単語|意味|word|meaning/i)) {
               headerIndex = i;
               break;
             }
@@ -79,19 +79,23 @@ export default function Home() {
 
           let finalData: any[] = [];
           if (headerIndex !== -1) {
-            // Use identified header row
-            const headers = rows[headerIndex];
-            const wordIdx = headers.findIndex(h => h.includes('語彙') || h.includes('単語') || h.includes('word')) !== -1
-              ? headers.findIndex(h => h.includes('語彙') || h.includes('単語') || h.includes('word'))
-              : (headers.length > 1 ? 1 : 0);
-            const meaningIdx = headers.findIndex(h => h.includes('語釈') || h.includes('意味') || h.includes('meaning') || h.includes('訳')) !== -1
-              ? headers.findIndex(h => h.includes('語釈') || h.includes('意味') || h.includes('meaning') || h.includes('訳'))
-              : (headers.length > 2 ? 2 : 1);
+            const headers = rows[headerIndex].map(h => h.trim().replace(/[\uFEFF\u200B-\u200D\uFEFF]/g, ""));
+            // Map headers to indices
+            let wordIdx = headers.findIndex(h => h.includes('語彙') || h.includes('単語') || h.toLowerCase().includes('word'));
+            let meaningIdx = headers.findIndex(h => h.includes('語釈') || h.includes('意味') || h.toLowerCase().includes('meaning') || h.includes('訳'));
 
-            finalData = rows.slice(headerIndex + 1).map(row => ({
-              word: row[wordIdx]?.trim() || '',
-              meaning: row[meaningIdx]?.trim() || ''
-            })).filter(item => item.word !== '');
+            // Fallback logic
+            if (wordIdx === -1) wordIdx = 1; // Assuming '語彙' is column 1
+            if (meaningIdx === -1) meaningIdx = 2; // Assuming '語釈' is column 2
+
+            finalData = rows.slice(headerIndex + 1).map(row => {
+              const wordCell = row[wordIdx] || row[1] || '';
+              const meaningCell = row[meaningIdx] || row[2] || '';
+              return {
+                word: wordCell.trim().replace(/[\u0000-\u001F\u007F-\u009F\uFEFF\u200B-\u200D]/g, ""),
+                meaning: meaningCell.trim().replace(/[\u0000-\u001F\u007F-\u009F\uFEFF\u200B-\u200D]/g, "")
+              };
+            }).filter(item => item.word !== '');
           } else {
             // Fallback: No header found, assume col 0 is word, col 1 is meaning
             finalData = rows.map(row => ({

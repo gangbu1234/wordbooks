@@ -75,19 +75,16 @@ const Flashcard: React.FC<FlashcardProps> = ({ data, currentIndex, onNext, onPre
                     {!isFlipped ? (
                         /* Front: Word */
                         <div className={`${styles.cardFace} ${styles.cardFront}`}>
-                            <span className={styles.hint}>Word</span>
+                            <span className={styles.hintTop}>Word</span>
                             <div className={styles.word}>{currentWord.word}</div>
-                            <div className={styles.hint}>Swipe L/R to Flip</div>
-                            <div className={styles.hint} style={{ opacity: 0.5, bottom: '8px' }}>
-                                {currentIndex + 1} / {data.length}
-                            </div>
+                            <span className={styles.hintBottom}>Swipe L/R to Flip</span>
                         </div>
                     ) : (
                         /* Back: Meaning */
                         <div className={`${styles.cardFace} ${styles.cardBack}`}>
-                            <span className={styles.hint}>Meaning</span>
+                            <span className={styles.hintTop}>Meaning</span>
                             <div className={styles.meaning}>{currentWord.meaning}</div>
-                            <div className={styles.hint}>Swipe Up/Down for Next/Prev</div>
+                            <span className={styles.hintBottom}>Swipe Up/Down for Next/Prev</span>
                         </div>
                     )}
                 </div>
