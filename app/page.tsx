@@ -44,6 +44,13 @@ export default function Home() {
 
       let csvText = '';
       const dataView = new Uint8Array(result as ArrayBuffer);
+
+      // Detect ZIP/Excel binary (Starts with PK)
+      if (dataView[0] === 0x50 && dataView[1] === 0x4B) {
+        alert('Excelファイル(.xlsx)をそのまま読み込むことはできません。「名前をつけて保存」から「CSV(コンマ区切り)」を選んで保存し直したファイルを選択してください。');
+        return;
+      }
+
       try {
         csvText = new TextDecoder('utf-8', { fatal: true }).decode(dataView);
       } catch (e) {
@@ -64,32 +71,31 @@ export default function Home() {
           let headerIndex = rows.findIndex(row =>
             row.some(cell => /語彙|語釈|単語|意味|word|meaning/i.test(cell))
           );
+          const dataRows = rows.slice(headerIndex === -1 ? 0 : headerIndex + 1);
 
-          let wordIdx = -1;
-          let meaningIdx = -1;
+          const finalData = dataRows.map(row => {
+            // find all cells that are not just numbers and not empty
+            const textCells = row.map((cell, idx) => ({ cell: cell.trim(), idx }))
+              .filter(obj => obj.cell.length > 0 && isNaN(Number(obj.cell.replace(/[,.-]/g, ''))));
 
-          if (headerIndex !== -1) {
-            const headers = rows[headerIndex];
-            wordIdx = headers.findIndex(h => h.includes('語彙') || h.includes('単語') || h.toLowerCase().includes('word'));
-            meaningIdx = headers.findIndex(h => h.includes('語釈') || h.includes('意味') || h.toLowerCase().includes('meaning') || h.includes('訳'));
-          }
+            // If we didn't find clear text cells, just take the first two non-empty ones
+            let word = '';
+            let meaning = '';
 
-          // 2. Strong fallback: if indices not found, use first two non-number columns
-          if (wordIdx === -1 || meaningIdx === -1) {
-            const firstDataRow = rows[headerIndex === -1 ? 0 : headerIndex + 1] || rows[0];
-            const nonNumberIndices = firstDataRow.map((cell, idx) => isNaN(Number(cell)) ? idx : -1).filter(idx => idx !== -1);
-            wordIdx = nonNumberIndices[0] ?? 0;
-            meaningIdx = nonNumberIndices[1] ?? (firstDataRow.length > 1 ? 1 : 0);
-          }
+            if (textCells.length >= 2) {
+              word = textCells[0].cell;
+              meaning = textCells[1].cell;
+            } else {
+              const nonEmpties = row.map(c => c.trim()).filter(c => c.length > 0);
+              word = nonEmpties[0] || '';
+              meaning = nonEmpties[1] || '';
+            }
 
-          const startData = headerIndex === -1 ? 0 : headerIndex + 1;
-          const finalData = rows.slice(startData).map(row => ({
-            word: row[wordIdx] || '',
-            meaning: row[meaningIdx] || ''
-          })).filter(item => item.word !== '');
+            return { word, meaning };
+          }).filter(item => item.word.length > 0);
 
           if (finalData.length === 0) {
-            alert('有効な単語データが見つかりませんでした。');
+            alert('有効なデータを見つかりませんでした。別のCSVを試してください。');
             return;
           }
 
@@ -102,6 +108,7 @@ export default function Home() {
           const updatedCustom = [newBook, ...customBooks];
           setCustomBooks(updatedCustom);
           localStorage.setItem('custom_wordbooks', JSON.stringify(updatedCustom));
+          alert(`${finalData.length} 件の単語を読み込みました！`);
         }
       });
     };
@@ -215,7 +222,7 @@ export default function Home() {
 
       <footer className={styles.footer}>
         <p>&copy; 2024 Wordbooks For Students</p>
-        <p style={{ fontSize: '0.7rem', opacity: 0.5, marginTop: '4px' }}>Build: 2024.03.10.02 (Ultimate Fix)</p>
+        <p style={{ fontSize: '0.7rem', opacity: 0.5, marginTop: '4px' }}>Build: 2024.03.10.05 (Excel Detection & Scroll Fix)</p>
       </footer>
     </main>
   );

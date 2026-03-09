@@ -24,11 +24,9 @@
 
 html,
 body {
-  height: 100%;
+  min-height: 100%;
   width: 100%;
-  overflow: hidden;
   overscroll-behavior: none;
-  touch-action: none;
   user-select: none;
   -webkit-user-select: none;
 }
