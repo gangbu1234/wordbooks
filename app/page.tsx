@@ -42,70 +42,54 @@ export default function Home() {
       const result = event.target?.result;
       if (!result) return;
 
-      // Simple encoding detection/fix for Japanese characters (Shift-JIS vs UTF-8)
-      // If the file is from Excel (Japanese environment), it's likely Shift-JIS.
       let csvText = '';
-      const decoder = new TextDecoder('utf-8');
       const dataView = new Uint8Array(result as ArrayBuffer);
-
       try {
-        // Try UTF-8 first
-        csvText = decoder.decode(dataView);
-        if (csvText.includes('')) { // Replacement character found, probably not UTF-8
-          throw new Error('Not UTF-8');
-        }
+        csvText = new TextDecoder('utf-8', { fatal: true }).decode(dataView);
       } catch (e) {
-        // Fallback to Shift-JIS (CP932)
-        const sjisDecoder = new TextDecoder('shift-jis');
-        csvText = sjisDecoder.decode(dataView);
+        csvText = new TextDecoder('shift-jis').decode(dataView);
       }
 
       Papa.parse(csvText, {
-        header: false, // Parse as arrays first to find the header row
+        header: false,
         skipEmptyLines: 'greedy',
         complete: (results) => {
-          const rows = results.data as string[][];
+          const rows = (results.data as any[][]).map(row =>
+            row.map(cell => String(cell || '').trim().replace(/[\u0000-\u001F\u007F-\u009F\uFEFF\u200B-\u200D]/g, ""))
+          ).filter(row => row.some(cell => cell !== ''));
+
           if (rows.length === 0) return;
 
-          // Find the header row (the one containing '語彙', '語釈', 'word', 'meaning' etc.)
-          let headerIndex = -1;
-          for (let i = 0; i < Math.min(rows.length, 5); i++) {
-            const rowStr = rows[i].join(',').replace(/[\uFEFF\u200B-\u200D\uFEFF]/g, ""); // Remove zero-width spaces
-            if (rowStr.match(/語彙|語釈|単語|意味|word|meaning/i)) {
-              headerIndex = i;
-              break;
-            }
-          }
+          // 1. Identify header row (priority: includes keywords)
+          let headerIndex = rows.findIndex(row =>
+            row.some(cell => /語彙|語釈|単語|意味|word|meaning/i.test(cell))
+          );
 
-          let finalData: any[] = [];
+          let wordIdx = -1;
+          let meaningIdx = -1;
+
           if (headerIndex !== -1) {
-            const headers = rows[headerIndex].map(h => h.trim().replace(/[\uFEFF\u200B-\u200D\uFEFF]/g, ""));
-            // Map headers to indices
-            let wordIdx = headers.findIndex(h => h.includes('語彙') || h.includes('単語') || h.toLowerCase().includes('word'));
-            let meaningIdx = headers.findIndex(h => h.includes('語釈') || h.includes('意味') || h.toLowerCase().includes('meaning') || h.includes('訳'));
-
-            // Fallback logic
-            if (wordIdx === -1) wordIdx = 1; // Assuming '語彙' is column 1
-            if (meaningIdx === -1) meaningIdx = 2; // Assuming '語釈' is column 2
-
-            finalData = rows.slice(headerIndex + 1).map(row => {
-              const wordCell = row[wordIdx] || row[1] || '';
-              const meaningCell = row[meaningIdx] || row[2] || '';
-              return {
-                word: wordCell.trim().replace(/[\u0000-\u001F\u007F-\u009F\uFEFF\u200B-\u200D]/g, ""),
-                meaning: meaningCell.trim().replace(/[\u0000-\u001F\u007F-\u009F\uFEFF\u200B-\u200D]/g, "")
-              };
-            }).filter(item => item.word !== '');
-          } else {
-            // Fallback: No header found, assume col 0 is word, col 1 is meaning
-            finalData = rows.map(row => ({
-              word: row[0]?.trim() || '',
-              meaning: row[1]?.trim() || ''
-            })).filter(item => item.word !== '');
+            const headers = rows[headerIndex];
+            wordIdx = headers.findIndex(h => h.includes('語彙') || h.includes('単語') || h.toLowerCase().includes('word'));
+            meaningIdx = headers.findIndex(h => h.includes('語釈') || h.includes('意味') || h.toLowerCase().includes('meaning') || h.includes('訳'));
           }
+
+          // 2. Strong fallback: if indices not found, use first two non-number columns
+          if (wordIdx === -1 || meaningIdx === -1) {
+            const firstDataRow = rows[headerIndex === -1 ? 0 : headerIndex + 1] || rows[0];
+            const nonNumberIndices = firstDataRow.map((cell, idx) => isNaN(Number(cell)) ? idx : -1).filter(idx => idx !== -1);
+            wordIdx = nonNumberIndices[0] ?? 0;
+            meaningIdx = nonNumberIndices[1] ?? (firstDataRow.length > 1 ? 1 : 0);
+          }
+
+          const startData = headerIndex === -1 ? 0 : headerIndex + 1;
+          const finalData = rows.slice(startData).map(row => ({
+            word: row[wordIdx] || '',
+            meaning: row[meaningIdx] || ''
+          })).filter(item => item.word !== '');
 
           if (finalData.length === 0) {
-            alert('有効なデータが見つかりませんでした。CSVの内容を確認してください。');
+            alert('有効な単語データが見つかりませんでした。');
             return;
           }
 
@@ -121,8 +105,14 @@ export default function Home() {
         }
       });
     };
-    // Read as ArrayBuffer to handle encoding detection
     reader.readAsArrayBuffer(file);
+  };
+
+  const clearAllCustom = () => {
+    if (confirm('すべてのカスタム単語帳を削除しますか？')) {
+      setCustomBooks([]);
+      localStorage.removeItem('custom_wordbooks');
+    }
   };
 
   const deleteCustomBook = (id: string, e: React.MouseEvent) => {
@@ -146,7 +136,7 @@ export default function Home() {
         <div className={styles.importSection}>
           <label className={styles.importButton}>
             <Upload size={20} />
-            <span>CSVファイルを読み込む</span>
+            <span>CSVを追加</span>
             <input
               type="file"
               accept=".csv"
@@ -154,6 +144,9 @@ export default function Home() {
               style={{ display: 'none' }}
             />
           </label>
+          <button onClick={clearAllCustom} className={styles.clearButton} title="初期化">
+            <Trash2 size={20} />
+          </button>
         </div>
 
         {/* Custom Books */}
@@ -222,6 +215,7 @@ export default function Home() {
 
       <footer className={styles.footer}>
         <p>&copy; 2024 Wordbooks For Students</p>
+        <p style={{ fontSize: '0.7rem', opacity: 0.5, marginTop: '4px' }}>Build: 2024.03.10.02 (Ultimate Fix)</p>
       </footer>
     </main>
   );

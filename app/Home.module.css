@@ -53,9 +53,10 @@
 }
 
 .importSection {
-    margin-bottom: 8px;
+    margin-bottom: 24px;
     display: flex;
     justify-content: center;
+    gap: 12px;
 }
 
 .importButton {
@@ -64,13 +65,32 @@
     gap: 12px;
     background: var(--primary);
     color: white;
-    padding: 16px 24px;
-    border-radius: 16px;
+    padding: 14px 24px;
+    border-radius: 12px;
     font-family: var(--font-inter), sans-serif;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2);
+    flex: 1;
+    justify-content: center;
+}
+
+.clearButton {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: none;
+    padding: 0 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.clearButton:hover {
+    background: #ef4444;
+    color: white;
 }
 
 .importButton:hover {
