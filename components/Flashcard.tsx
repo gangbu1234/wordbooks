@@ -71,28 +71,26 @@ const Flashcard: React.FC<FlashcardProps> = ({ data, currentIndex, onNext, onPre
                 onDragEnd={handleDragEnd}
                 whileTap={{ scale: 0.98 }}
             >
-                <motion.div
-                    className={`${styles.cardInner} ${isFlipped ? styles.cardFlipped : ''}`}
-                    animate={{ rotateY: isFlipped ? 180 : 0 }}
-                    transition={{ type: 'spring', damping: 20, stiffness: 100 }}
-                >
-                    {/* Front Face: Word */}
-                    <div className={`${styles.cardFace} ${styles.cardFront}`}>
-                        <span className={styles.hint}>Word</span>
-                        <div className={styles.word}>{currentWord.word}</div>
-                        <div className={styles.hint}>Swipe L/R to Flip</div>
-                        <div className={styles.hint} style={{ opacity: 0.5, bottom: '8px' }}>
-                            {currentIndex + 1} / {data.length}
+                <div className={styles.cardInner}>
+                    {!isFlipped ? (
+                        /* Front: Word */
+                        <div className={`${styles.cardFace} ${styles.cardFront}`}>
+                            <span className={styles.hint}>Word</span>
+                            <div className={styles.word}>{currentWord.word}</div>
+                            <div className={styles.hint}>Swipe L/R to Flip</div>
+                            <div className={styles.hint} style={{ opacity: 0.5, bottom: '8px' }}>
+                                {currentIndex + 1} / {data.length}
+                            </div>
                         </div>
-                    </div>
-
-                    {/* Back Face: Meaning */}
-                    <div className={`${styles.cardFace} ${styles.cardBack}`}>
-                        <span className={styles.hint}>Meaning</span>
-                        <div className={styles.meaning}>{currentWord.meaning}</div>
-                        <div className={styles.hint}>Swipe Up/Down for Next/Prev</div>
-                    </div>
-                </motion.div>
+                    ) : (
+                        /* Back: Meaning */
+                        <div className={`${styles.cardFace} ${styles.cardBack}`}>
+                            <span className={styles.hint}>Meaning</span>
+                            <div className={styles.meaning}>{currentWord.meaning}</div>
+                            <div className={styles.hint}>Swipe Up/Down for Next/Prev</div>
+                        </div>
+                    )}
+                </div>
             </motion.div>
         </div>
     );
