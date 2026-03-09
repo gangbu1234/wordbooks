@@ -20,6 +20,7 @@ export default function LearnPage() {
 
     const [words, setWords] = useState<WordData[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [direction, setDirection] = useState(0); // 1 for down (next), -1 for up (prev)
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -57,14 +58,17 @@ export default function LearnPage() {
     }, [bookId]);
 
     const handleNext = () => {
+        setDirection(1);
         setCurrentIndex((prev) => (prev + 1) % words.length);
     };
 
     const handlePrev = () => {
+        setDirection(-1);
         setCurrentIndex((prev) => (prev - 1 + words.length) % words.length);
     };
 
     const handleReset = () => {
+        setDirection(0);
         setCurrentIndex(0);
     };
 
@@ -106,14 +110,39 @@ export default function LearnPage() {
                 </button>
             </nav>
 
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="popLayout" custom={direction} initial={false}>
                 <motion.div
                     key={currentIndex}
-                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    style={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                    custom={direction}
+                    variants={{
+                        enter: (direction: number) => ({
+                            y: direction > 0 ? '100%' : direction < 0 ? '-100%' : 0,
+                            opacity: 0,
+                        }),
+                        center: {
+                            y: 0,
+                            opacity: 1,
+                        },
+                        exit: (direction: number) => ({
+                            y: direction > 0 ? '-100%' : direction < 0 ? '100%' : 0,
+                            opacity: 0,
+                        }),
+                    }}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{
+                        y: { type: 'spring', stiffness: 300, damping: 30 },
+                        opacity: { duration: 0.2 },
+                    }}
+                    style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        position: 'absolute'
+                    }}
                 >
                     <Flashcard
                         data={words}
