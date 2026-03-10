@@ -10,8 +10,8 @@
 
 .cardWrapper {
     width: 90vw;
-    height: 70vh;
-    /* Relative height based on viewport */
+    height: clamp(55vh, 65vh, 75vh);
+    /* Defensive height for mobile with browser bars */
     max-width: 500px;
     max-height: 800px;
     cursor: pointer;

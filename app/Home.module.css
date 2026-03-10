@@ -2,14 +2,14 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    padding: 40px 20px;
+    padding: 5vh 5vw;
     align-items: center;
-    gap: 40px;
+    gap: 4vh;
 }
 
 .header {
     text-align: center;
-    margin-top: 40px;
+    margin-top: 2vh;
     animation: fadeIn 1s ease-out;
 }
 
@@ -28,20 +28,21 @@
 
 .title {
     font-family: var(--font-outfit), sans-serif;
-    font-size: 3rem;
+    font-size: clamp(2rem, 10vw, 3.5rem);
     font-weight: 800;
     letter-spacing: -0.02em;
     background: linear-gradient(135deg, var(--foreground) 0%, var(--primary) 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     margin: 0;
 }
 
 .subtitle {
     font-family: var(--font-inter), sans-serif;
-    font-size: 1.1rem;
+    font-size: clamp(0.9rem, 4vw, 1.1rem);
     color: var(--text-dim);
-    max-width: 400px;
+    max-width: 90vw;
 }
 
 .bookList {
@@ -141,14 +142,14 @@
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--glass);
-    border-radius: 20px;
-    padding: 24px;
+    border-radius: 1.2rem;
+    padding: clamp(1rem, 4vw, 1.5rem);
     display: flex;
     align-items: center;
     justify-content: space-between;
     text-decoration: none;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .bookCard:hover {

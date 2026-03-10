@@ -22,11 +22,11 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 64px;
+    height: clamp(56px, 10vh, 64px);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 20px;
+    padding: 0 5vw;
     background: var(--glass);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
@@ -69,8 +69,8 @@
 }
 
 .filterArea {
-    margin-top: 64px;
-    padding: 8px 0;
+    margin-top: clamp(56px, 10vh, 64px);
+    padding: 4px 0;
     background: var(--glass);
     border-bottom: 1px solid var(--glass);
     z-index: 90;
@@ -79,8 +79,8 @@
 .filterScroll {
     display: flex;
     overflow-x: auto;
-    padding: 0 16px;
-    gap: 10px;
+    padding: 0 4vw;
+    gap: 0.5rem;
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
@@ -91,12 +91,12 @@
 
 .filterChip {
     flex-shrink: 0;
-    padding: 8px 16px;
-    border-radius: 20px;
+    padding: 6px 12px;
+    border-radius: 1rem;
     background: rgba(255, 255, 255, 0.5);
     border: 1px solid var(--glass);
     color: var(--text-dim);
-    font-size: 0.85rem;
+    font-size: clamp(0.75rem, 3.5vw, 0.85rem);
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -111,10 +111,10 @@
 }
 
 .filterInfo {
-    font-size: 0.75rem;
+    font-size: clamp(0.7rem, 3vw, 0.75rem);
     color: var(--text-dim);
     text-align: center;
-    margin-top: 4px;
+    margin-top: 2px;
     font-weight: 500;
 }
 
