@@ -2,8 +2,8 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    width: 100vw;
+    width: 100%;
+    height: 100%;
     position: relative;
     overflow: hidden;
 }
@@ -44,13 +44,7 @@
     border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.cardFront {
-    /* Front face style */
-}
 
-.cardBack {
-    /* Back face style */
-}
 
 .word {
     font-family: var(--font-outfit), sans-serif;
