@@ -64,15 +64,27 @@ const LearnPage = () => {
                     skipEmptyLines: 'greedy',
                     complete: (results) => {
                         const rows = results.data as string[][];
-                        const parsed = rows.map(row => {
-                            const checks = [2, 3, 4, 5, 6, 7].map(idx => {
+
+                        // Load persistent checks from localStorage for this specific book
+                        const savedChecks = localStorage.getItem(`checks_${bookId}`);
+                        const checkMap = savedChecks ? JSON.parse(savedChecks) : {};
+
+                        const parsed = rows.map((row, rIdx) => {
+                            // Priority 1: Use checkMap (local storage)
+                            // Priority 2: Use CSV columns (imported data)
+                            const csvChecks = [2, 3, 4, 5, 6, 7].map(idx => {
                                 const v = String(row[idx] || '').toLowerCase().trim();
                                 return v === '1' || v === 'o' || v === 'v' || v === 'checked';
                             });
+
+                            // Composite key for robustness: index + word
+                            const key = `${rIdx}_${row[0]}`;
+                            const finalChecks = checkMap[key] || csvChecks;
+
                             return {
                                 word: row[0] || '',
                                 meaning: row[1] || '',
-                                checks,
+                                checks: finalChecks,
                                 rawRow: row
                             };
                         }).filter(item => item.word !== '');
@@ -141,7 +153,16 @@ const LearnPage = () => {
 
         setData(newData);
 
-        // Persist if custom
+        // PERSIST CHECK DATA
+        // Map current state to a simple object for storage
+        const checkMap: Record<string, boolean[]> = {};
+        newData.forEach((item, idx) => {
+            const key = `${idx}_${item.word}`;
+            checkMap[key] = item.checks;
+        });
+        localStorage.setItem(`checks_${bookId}`, JSON.stringify(checkMap));
+
+        // Also persist if it's a custom book (the whole book data)
         if (isCustom) {
             const saved = localStorage.getItem('custom_wordbooks');
             if (saved) {
